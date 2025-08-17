@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BuiltByBrandon Virtual Gallery</title>
+<style>
+  body { font-family: monospace; background: #111; color: #eee; padding: 20px; }
+  #output { white-space: pre-wrap; background: #222; padding: 15px; max-height: 500px; overflow-y: auto; border-radius: 8px;}
+  button { margin: 5px; padding: 5px 10px; font-size: 1rem; }
+  input { font-size: 1rem; margin: 3px; }
+</style>
+</head>
+<body>
+
+<h1>🌌 BuiltByBrandon Virtual Gallery 🌌</h1>
+<div id="output"></div>
+
+<div id="controls">
+    <div id="move-buttons"></div>
+    <div id="examine-buttons"></div>
+    <div id="secret-form" style="display:none;">
+        <h3>Secret Room Entry</h3>
+        <input id="name" placeholder="Name"><br>
+        <input id="email" placeholder="Email"><br>
+        <input id="idea" placeholder="Mini-Website Idea"><br>
+        <button id="submit-entry">Submit Entry</button>
+    </div>
+</div>
+
+<script>
+const output = document.getElementById("output");
+function write(text){ output.innerText += text + "\n"; output.scrollTop = output.scrollHeight; }
+
+// Player state
+const player = {
+    current_room: "lobby",
+    visited_rooms: new Set(),
+    inventory: [],
+    secret_items_found: [],
+    secrets_found: []
+};
+
+// Rooms
+const ROOMS = {
+    "lobby": {"N":"photo_room","S":"sculpture_room","E":"abstract_room","W":"dark_room"},
+    "photo_room": {"S":"lobby","N":"flower_room"},
+    "flower_room": {"S":"photo_room"},
+    "sculpture_room": {"N":"lobby","S":"space_room"},
+    "space_room": {"N":"sculpture_room"},
+    "abstract_room": {"W":"lobby","E":"mirror_room"},
+    "mirror_room": {"W":"abstract_room"},
+    "dark_room": {"E":"lobby","W":"trap_room"},
+    "trap_room": {"E":"dark_room"},
+    "secret_room": {}
+};
+
+const MAIN_ROOMS = ["lobby","photo_room","flower_room","sculpture_room","space_room","abstract_room","mirror_room","dark_room"];
+const ROOM_ITEMS = {
+    "photo_room":["photo"], "flower_room":["flower"], "sculpture_room":["sculpture"], 
+    "space_room":["space","frame"], "abstract_room":["abstract"], "mirror_room":["mirror"], 
+    "dark_room":["dark"], "trap_room":["decoy_art"]
+};
+
+// Immersive descriptions
+const ART_PIECES = {
+    "photo": "A stunning photograph of an abandoned city at dusk. The colors bleed into the shadows, and you swear you see movement in the distance.",
+    "flower": "A delicate bloom hovers mid-air, petals trembling as if alive. A faint whisper seems to emanate from its center.",
+    "sculpture": "A twisting metal sculpture reflects the gallery lights in eerie, almost impossible angles. Touching it feels like grasping at air.",
+    "space": "A cosmic diorama of stars and planets, suspended above you. Tiny meteorites orbit as if mocking your presence.",
+    "frame": "An empty frame that somehow feels full. You almost want to step inside it…",
+    "abstract": "A swirling canvas of colors that almost forms a shape, but it constantly slips away from perception. The edges seem to shift when unobserved.",
+    "mirror": "Your reflection stretches and warps unnaturally. It feels aware, studying your every move.",
+    "dark": "Shadows coil along the walls and floor. Something moves just beyond your sight. The gallery is watching.",
+    "decoy_art": "A suspicious piece of art labeled 'We Hope You Enjoy Your Stay…'. Approaching it sends a shiver down your spine and instantly returns you to the lobby."
+};
+
+const WHISPERS = [
+    "…Did you hear that?", "…The gallery knows your name…",
+    "…Careful where you step…", "…Not all doors lead out…",
+    "…Look closer… or risk missing it…", "…The walls remember…"
+];
+
+// Show room
+function show_room(){
+    const room = player.current_room;
+    player.visited_rooms.add(room);
+    write(`\nYou are in ${room.replace('_',' ').toUpperCase()}`);
+    write(`This room feels ${Math.random()<0.33?"alive":"silent"}.`);
+}
+
+// Move
+function move(to_room){
+    if(Math.random()<0.1) {
+        to_room = "trap_room";
+        write("💀 You are suddenly sent to a trap room!");
+    } else if(Math.random()<0.1){
+        const options = Object.values(ROOMS[player.current_room]).filter(r=>r!==to_room);
+        if(options.length>0){
+            to_room = options[Math.floor(Math.random()*options.length)];
+            write("The gallery twists… you end up somewhere unexpected.");
+        }
+    }
+    player.current_room = to_room;
+    show_room();
+    check_secret_room_unlock();
+    update_controls();
+}
+
+// Examine
+function examine(item){
+    if(item==="decoy_art"){
+        write("💀 'We hope you enjoy your stay…' You are sent back to the lobby.");
+        player.current_room = "lobby";
+        show_room();
+    } else {
+        write(ART_PIECES[item] || "Mysterious object…");
+        if(!player.inventory.includes(item)) player.inventory.push(item);
+        if(!player.secret_items_found.includes(item)) player.secret_items_found.push(item);
+    }
+    update_controls();
+}
+
+// Secret room logic
+function check_secret_room_unlock(){
+    if(MAIN_ROOMS.every(r=>player.visited_rooms.has(r)) && !player.secrets_found.includes("secret_room")){
+        write("\n💡 A hidden passage reveals itself… secret room unlocked!");
+        player.current_room = "secret_room";
+        write("✨ SECRET ROOM ✨");
+        document.getElementById("secret-form").style.display = "block";
+        player.secrets_found.push("secret_room");
+    }
+}
+
+// Update buttons
+function update_controls(){
+    const move_div = document.getElementById("move-buttons");
+    const examine_div = document.getElementById("examine-buttons");
+    move_div.innerHTML = "";
+    examine_div.innerHTML = "";
+
+    const exits = ROOMS[player.current_room] || {};
+    for(let dir in exits){
+        const btn = document.createElement("button");
+        btn.innerText = `${dir.toUpperCase()} → ${exits[dir].replace('_',' ').toUpperCase()}`;
+        btn.onclick = ()=> move(exits[dir]);
+        move_div.appendChild(btn);
+    }
+
+    const items = ROOM_ITEMS[player.current_room] || [];
+    items.forEach(it=>{
+        const btn = document.createElement("button");
+        btn.innerText = it.replace('_',' ').toUpperCase();
+        btn.onclick = ()=> examine(it);
+        examine_div.appendChild(btn);
+    });
+}
+
+// Secret form submission
+document.getElementById("submit-entry").onclick = ()=>{
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("email").value;
+    const idea = document.getElementById("idea").value;
+    write(`\nSaved Entry: ${name} | ${email} | ${idea}`);
+    document.getElementById("secret-form").style.display = "none";
+}
+
+// Random whispers
+setInterval(()=>{ write(WHISPERS[Math.floor(Math.random()*WHISPERS.length)]); }, 7000);
+
+// Start the game
+write("Welcome to the BuiltByBrandon Virtual Gallery!");
+show_room();
+update_controls();
+</script>
+
+</body>
+</html>
