@@ -7,7 +7,8 @@
   body { font-family: monospace; background: #111; color: #eee; padding: 20px; }
   #output { white-space: pre-wrap; background: #222; padding: 15px; max-height: 500px; overflow-y: auto; border-radius: 8px;}
   button { margin: 5px; padding: 5px 10px; font-size: 1rem; }
-  input { font-size: 1rem; margin: 3px; }
+  input, textarea { font-size: 1rem; margin: 3px; width: 300px; display: block; }
+  #secret-form { display: none; background: #222; padding: 10px; border-radius: 8px; margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -18,12 +19,23 @@
 <div id="controls">
     <div id="move-buttons"></div>
     <div id="examine-buttons"></div>
-    <div id="secret-form" style="display:none;">
-        <h3>Secret Room Entry</h3>
-        <input id="name" placeholder="Name"><br>
-        <input id="email" placeholder="Email"><br>
-        <input id="idea" placeholder="Mini-Website Idea"><br>
-        <button id="submit-entry">Submit Entry</button>
+    <div id="secret-form">
+        <h3>✨ Secret Room Entry ✨</h3>
+        <form action="https://formspree.io/f/myzpaeyl" method="POST" target="_blank">
+            <label>
+                Name:<br>
+                <input type="text" name="name" required>
+            </label>
+            <label>
+                Email:<br>
+                <input type="email" name="email" required>
+            </label>
+            <label>
+                Mini-Website Idea:<br>
+                <textarea name="idea" required></textarea>
+            </label>
+            <button type="submit">Submit Entry</button>
+        </form>
     </div>
 </div>
 
@@ -31,7 +43,6 @@
 const output = document.getElementById("output");
 function write(text){ output.innerText += text + "\n"; output.scrollTop = output.scrollHeight; }
 
-// Player state
 const player = {
     current_room: "lobby",
     visited_rooms: new Set(),
@@ -40,7 +51,6 @@ const player = {
     secrets_found: []
 };
 
-// Rooms
 const ROOMS = {
     "lobby": {"N":"photo_room","S":"sculpture_room","E":"abstract_room","W":"dark_room"},
     "photo_room": {"S":"lobby","N":"flower_room"},
@@ -61,7 +71,6 @@ const ROOM_ITEMS = {
     "dark_room":["dark"], "trap_room":["decoy_art"]
 };
 
-// Immersive descriptions
 const ART_PIECES = {
     "photo": "A stunning photograph of an abandoned city at dusk. The colors bleed into the shadows, and you swear you see movement in the distance.",
     "flower": "A delicate bloom hovers mid-air, petals trembling as if alive. A faint whisper seems to emanate from its center.",
@@ -80,7 +89,6 @@ const WHISPERS = [
     "…Look closer… or risk missing it…", "…The walls remember…"
 ];
 
-// Show room
 function show_room(){
     const room = player.current_room;
     player.visited_rooms.add(room);
@@ -88,7 +96,6 @@ function show_room(){
     write(`This room feels ${Math.random()<0.33?"alive":"silent"}.`);
 }
 
-// Move
 function move(to_room){
     if(Math.random()<0.1) {
         to_room = "trap_room";
@@ -106,7 +113,6 @@ function move(to_room){
     update_controls();
 }
 
-// Examine
 function examine(item){
     if(item==="decoy_art"){
         write("💀 'We hope you enjoy your stay…' You are sent back to the lobby.");
@@ -120,18 +126,16 @@ function examine(item){
     update_controls();
 }
 
-// Secret room logic
 function check_secret_room_unlock(){
     if(MAIN_ROOMS.every(r=>player.visited_rooms.has(r)) && !player.secrets_found.includes("secret_room")){
         write("\n💡 A hidden passage reveals itself… secret room unlocked!");
         player.current_room = "secret_room";
         write("✨ SECRET ROOM ✨");
-        document.getElementById("secret-form").style.display = "block";
+        document.getElementById("secret-form").style.display="block";
         player.secrets_found.push("secret_room");
     }
 }
 
-// Update buttons
 function update_controls(){
     const move_div = document.getElementById("move-buttons");
     const examine_div = document.getElementById("examine-buttons");
@@ -155,26 +159,6 @@ function update_controls(){
     });
 }
 
-<div id="secret-form">
-    <h3>Secret Room Entry</h3>
-    <form action="https://formspree.io/f/myzpaeyl" method="POST" target="_blank">
-        <label>
-            Name:<br>
-            <input type="text" name="name" required>
-        </label><br>
-        <label>
-            Email:<br>
-            <input type="email" name="email" required>
-        </label><br>
-        <label>
-            Mini-Website Idea:<br>
-            <textarea name="idea" required></textarea>
-        </label><br>
-        <button type="submit">Submit Entry</button>
-    </form>
-</div>
-
-
 // Random whispers
 setInterval(()=>{ write(WHISPERS[Math.floor(Math.random()*WHISPERS.length)]); }, 7000);
 
@@ -186,4 +170,3 @@ update_controls();
 
 </body>
 </html>
-
