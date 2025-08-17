@@ -155,14 +155,25 @@ function update_controls(){
     });
 }
 
-// Secret form submission
-document.getElementById("submit-entry").onclick = ()=>{
-    const name = document.getElementById("name").value;
-    const email = document.getElementById("email").value;
-    const idea = document.getElementById("idea").value;
-    write(`\nSaved Entry: ${name} | ${email} | ${idea}`);
-    document.getElementById("secret-form").style.display = "none";
-}
+<div id="secret-form">
+    <h3>Secret Room Entry</h3>
+    <form action="https://formspree.io/f/myzpaeyl" method="POST" target="_blank">
+        <label>
+            Name:<br>
+            <input type="text" name="name" required>
+        </label><br>
+        <label>
+            Email:<br>
+            <input type="email" name="email" required>
+        </label><br>
+        <label>
+            Mini-Website Idea:<br>
+            <textarea name="idea" required></textarea>
+        </label><br>
+        <button type="submit">Submit Entry</button>
+    </form>
+</div>
+
 
 // Random whispers
 setInterval(()=>{ write(WHISPERS[Math.floor(Math.random()*WHISPERS.length)]); }, 7000);
@@ -175,3 +186,4 @@ update_controls();
 
 </body>
 </html>
+
